@@ -4,8 +4,18 @@ This repository contains a GitHub Copilot skill definition and a TypeScript MCP 
 
 - load a CSV dataset
 - infer a simple tabular schema
+- suggest chart options with reasons and transformation plans
 - generate a Vega-Lite spec for bar, line, scatter, or timeline (gantt-style) charts
 - render an HTML preview artifact
+
+## Skill split
+
+The chart workflow is split into two skills:
+
+- `.github/skills/chart-option-planner`: decide which charts are possible and why
+- `.github/skills/chart-builder`: build the selected chart into HTML/PNG artifacts
+
+The existing `.github/skills/vega-data-charting` skill acts as an orchestrator for this two-step flow.
 
 ## Large dataset behavior
 

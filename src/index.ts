@@ -12,6 +12,7 @@ import { generateVegaSpec } from "./tools/generateVegaSpec.js";
 import { inferSchema } from "./tools/inferSchema.js";
 import { loadTabularFile } from "./tools/loadTabularFile.js";
 import { renderChartPreview } from "./tools/renderChartPreview.js";
+import { suggestChartOptions } from "./tools/suggestChartOptions.js";
 import type { SupportedChartType } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,6 +40,20 @@ const generateVegaSpecArgs = z.object({
   intent: z.string().optional(),
   chartType: z.enum(["bar", "line", "scatter", "timeline", "gantt"]).optional(),
   title: z.string().optional(),
+  rowLimit: z.number().int().positive().optional()
+});
+
+const suggestChartOptionsArgs = z.object({
+  rows: z.array(z.record(z.union([z.string(), z.number(), z.boolean(), z.null()]))),
+  schema: z.object({
+    fields: z.array(
+      z.object({
+        name: z.string(),
+        type: z.enum(["number", "string", "date", "boolean"])
+      })
+    )
+  }),
+  intent: z.string().optional(),
   rowLimit: z.number().int().positive().optional()
 });
 
@@ -95,6 +110,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           }
         },
         required: ["rows"]
+      }
+    },
+    {
+      name: "suggest_chart_options",
+      description: "Plan chart options from dataset schema with reasons and transformation recommendations.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          rows: { type: "array" },
+          schema: { type: "object" },
+          intent: { type: "string" },
+          rowLimit: {
+            type: "number",
+            description: "Optional row limit to activate large-dataset planning behavior."
+          }
+        },
+        required: ["rows", "schema"]
       }
     },
     {
@@ -161,6 +193,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         intent: parsed.intent,
         chartType: parsed.chartType as SupportedChartType | undefined,
         title: parsed.title,
+        rowLimit: parsed.rowLimit
+      })
+    );
+  }
+
+  if (name === "suggest_chart_options") {
+    const parsed = suggestChartOptionsArgs.parse(args ?? {});
+    return jsonResult(
+      suggestChartOptions({
+        rows: parsed.rows,
+        schema: parsed.schema,
+        intent: parsed.intent,
         rowLimit: parsed.rowLimit
       })
     );
