@@ -1,0 +1,9 @@
+aircraft_register,maintenance_start_date,maintenance_end_date,status,location,bay,slot,operator
+TC-JFA,2026-05-01,2026-05-07,Planned,IST-MRO,B1,S01,Turkish Technic
+TC-LGA,2026-05-03,2026-05-12,In Progress,ESB-Hangar,H2,S04,Pegasus Teknik
+TC-SMV,2026-05-05,2026-05-09,Completed,ADB-Maintenance,M3,S02,SunExpress Technik
+TC-ARB,2026-05-08,2026-05-15,Delayed,SAW-Line,L1,S03,Anadolu Maintenance
+TC-BNL,2026-05-10,2026-05-18,Planned,AYT-Hangar,H1,S05,Corendon MRO
+TC-DPK,2026-05-11,2026-05-14,In Progress,BJV-Maintenance,M1,S01,Freebird Technic
+TC-EZM,2026-05-13,2026-05-20,Planned,IST-MRO,B2,S06,Tailwind Engineering
+TC-FRT,2026-05-14,2026-05-22,Cancelled,ESB-Hangar,H3,S07,Atlas Global Technic
