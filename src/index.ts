@@ -38,13 +38,15 @@ const generateVegaSpecArgs = z.object({
   }),
   intent: z.string().optional(),
   chartType: z.enum(["bar", "line", "scatter", "timeline", "gantt"]).optional(),
-  title: z.string().optional()
+  title: z.string().optional(),
+  rowLimit: z.number().int().positive().optional()
 });
 
 const renderChartPreviewArgs = z.object({
   spec: z.record(z.unknown()),
   title: z.string().min(1),
-  outputName: z.string().min(1).default("chart-preview")
+  outputName: z.string().min(1).default("chart-preview"),
+  includePngBase64: z.boolean().optional()
 });
 
 const jsonResult = (payload: unknown): CallToolResult => ({
@@ -97,7 +99,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "generate_vega_spec",
-      description: "Generate a Vega-Lite spec for bar, line, scatter, or timeline/gantt charts.",
+      description: "Generate a Vega-Lite spec with large-dataset row-limit and auto-aggregation fallback support.",
       inputSchema: {
         type: "object",
         properties: {
@@ -105,20 +107,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           schema: { type: "object" },
           intent: { type: "string" },
           chartType: { type: "string", enum: ["bar", "line", "scatter", "timeline", "gantt"] },
-          title: { type: "string" }
+          title: { type: "string" },
+          rowLimit: {
+            type: "number",
+            description: "Optional max row count for direct plotting. If exceeded, auto-aggregation fallback is applied."
+          }
         },
         required: ["rows", "schema"]
       }
     },
     {
       name: "render_chart_preview",
-      description: "Render a Vega-Lite spec into an HTML preview artifact.",
+      description: "Render a Vega-Lite spec into HTML and PNG preview artifacts with optional base64 output.",
       inputSchema: {
         type: "object",
         properties: {
           spec: { type: "object" },
           title: { type: "string" },
-          outputName: { type: "string" }
+          outputName: { type: "string" },
+          includePngBase64: {
+            type: "boolean",
+            description: "If false, skip returning pngBase64 to reduce response payload size."
+          }
         },
         required: ["spec", "title"]
       }
@@ -150,7 +160,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         schema: parsed.schema,
         intent: parsed.intent,
         chartType: parsed.chartType as SupportedChartType | undefined,
-        title: parsed.title
+        title: parsed.title,
+        rowLimit: parsed.rowLimit
       })
     );
   }
@@ -162,7 +173,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         parsed.spec,
         parsed.title,
         path.resolve(workspaceRoot, "artifacts"),
-        parsed.outputName
+        parsed.outputName,
+        {
+          includePngBase64: parsed.includePngBase64
+        }
       )
     );
   }

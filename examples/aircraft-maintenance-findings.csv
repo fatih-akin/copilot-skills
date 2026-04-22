@@ -1,0 +1,11 @@
+work_order_id,aircraft_register,maintenance_type,status,base,team,requires_parts,reported_date
+WOA001,TC-JFA,A-Check,Open,IST-MRO,Team-Alpha,true,2026-05-01
+WOA002,TC-LGA,Engine Inspection,Open,ESB-Hangar,Team-Bravo,false,2026-05-02
+WOA003,TC-SMV,Cabin Retrofit,In Review,ADB-Maintenance,Team-Charlie,true,2026-05-03
+WOA004,TC-ARB,Hydraulic Test,Open,SAW-Line,Team-Alpha,false,2026-05-04
+WOA005,TC-BNL,Landing Gear Check,Escalated,AYT-Hangar,Team-Delta,true,2026-05-05
+WOA006,TC-DPK,Corrosion Scan,In Review,BJV-Maintenance,Team-Bravo,false,2026-05-06
+WOA007,TC-EZM,Avionics Update,Open,IST-MRO,Team-Charlie,true,2026-05-07
+WOA008,TC-FRT,Fuel Leak Check,Closed,ESB-Hangar,Team-Delta,false,2026-05-08
+WOA009,TC-KRM,Cabin Pressure Test,Escalated,ADB-Maintenance,Team-Alpha,true,2026-05-09
+WOA010,TC-MNL,Brake System Check,Open,SAW-Line,Team-Bravo,false,2026-05-10

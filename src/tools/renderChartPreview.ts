@@ -1,8 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import * as vega from "vega";
+import * as vegaLite from "vega-lite";
 
 export interface RenderChartPreviewResult {
   htmlPath: string;
+  pngPath: string;
+  pngBase64?: string;
+}
+
+export interface RenderChartPreviewOptions {
+  includePngBase64?: boolean;
 }
 
 const buildHtml = (title: string, spec: Record<string, unknown>): string => {
@@ -60,14 +68,34 @@ const buildHtml = (title: string, spec: Record<string, unknown>): string => {
 </html>`;
 };
 
+const renderToPng = async (spec: Record<string, unknown>): Promise<Buffer> => {
+  const vegaSpec = vegaLite.compile(spec as unknown as vegaLite.TopLevelSpec).spec;
+  const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
+  await view.runAsync();
+  const canvas = await view.toCanvas(1);
+  return (canvas as unknown as { toBuffer: (type: string) => Buffer }).toBuffer("image/png");
+};
+
 export const renderChartPreview = async (
   spec: Record<string, unknown>,
   title: string,
   outputDir: string,
-  outputName: string
+  outputName: string,
+  options: RenderChartPreviewOptions = {}
 ): Promise<RenderChartPreviewResult> => {
   await mkdir(outputDir, { recursive: true });
+
   const htmlPath = path.join(outputDir, `${outputName}.html`);
   await writeFile(htmlPath, buildHtml(title, spec), "utf8");
-  return { htmlPath };
+
+  const pngBuffer = await renderToPng(spec);
+  const pngPath = path.join(outputDir, `${outputName}.png`);
+  await writeFile(pngPath, pngBuffer);
+  const includePngBase64 = options.includePngBase64 ?? true;
+  if (!includePngBase64) {
+    return { htmlPath, pngPath };
+  }
+
+  const pngBase64 = `data:image/png;base64,${pngBuffer.toString("base64")}`;
+  return { htmlPath, pngPath, pngBase64 };
 };

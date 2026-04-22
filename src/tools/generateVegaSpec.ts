@@ -6,6 +6,7 @@ interface GenerateSpecInput {
   intent?: string;
   chartType?: SupportedChartType;
   title?: string;
+  rowLimit?: number;
 }
 
 interface VegaLiteFieldDef {
@@ -14,9 +15,210 @@ interface VegaLiteFieldDef {
   title?: string;
 }
 
+interface LargeDatasetMetadata {
+  rowCount: number;
+  rowLimit: number;
+  fallbackApplied: boolean;
+  fallbackStrategy?: string;
+  suggestions: string[];
+}
+
+interface AggregateFallback {
+  rows: DataRow[];
+  schema: InferredSchema;
+  preferredChartType: SupportedChartType;
+  strategy: string;
+}
+
+const DEFAULT_ROW_LIMIT = 5000;
+const MAX_CATEGORY_BUCKETS = 30;
+
+const joinFieldNames = (fields: SchemaField[]): string => (fields.length > 0 ? fields.map((field) => field.name).join(", ") : "none");
+
+const pickCategoryField = (stringFields: SchemaField[]): SchemaField | undefined => {
+  if (stringFields.length === 0) {
+    return undefined;
+  }
+
+  const preferredName = stringFields.find((field) => /status|type|team|base|location|operator|category/i.test(field.name));
+  if (preferredName) {
+    return preferredName;
+  }
+
+  const nonIdField = stringFields.find((field) => !/(^id$|_id$|id_|code|register|slot|work_order)/i.test(field.name));
+  return nonIdField ?? stringFields[0];
+};
+
+const getUnsupportedDatasetSuggestions = (schema: InferredSchema, largeDatasetMode = false): string[] => {
+  const dateFields = schema.fields.filter((field) => field.type === "date");
+  const stringFields = schema.fields.filter((field) => field.type === "string");
+  const booleanFields = schema.fields.filter((field) => field.type === "boolean");
+  const categoryField = pickCategoryField(stringFields);
+  const suggestions: string[] = [];
+
+  if (categoryField) {
+    suggestions.push(`Count records by ${categoryField.name} and use a bar chart${largeDatasetMode ? " (top categories only)" : ""}.`);
+  }
+
+  if (dateFields.length > 0) {
+    suggestions.push(`Aggregate daily/weekly counts by ${dateFields[0].name} and use a line chart.`);
+  }
+
+  if (dateFields.length > 0 && categoryField) {
+    suggestions.push(`Group by ${dateFields[0].name} + ${categoryField.name} and visualize with a stacked bar chart.`);
+  }
+
+  if (dateFields.length === 1 && categoryField) {
+    suggestions.push(`Add an end-date column for each ${categoryField.name} item to enable a timeline/gantt chart.`);
+  }
+
+  if (booleanFields.length > 0) {
+    suggestions.push(`Convert ${booleanFields[0].name} to 0/1 and aggregate by category for a bar chart.`);
+  }
+
+  return suggestions;
+};
+
+const unsupportedDatasetError = (schema: InferredSchema): Error => {
+  const dateFields = schema.fields.filter((field) => field.type === "date");
+  const numberFields = schema.fields.filter((field) => field.type === "number");
+  const stringFields = schema.fields.filter((field) => field.type === "string");
+  const booleanFields = schema.fields.filter((field) => field.type === "boolean");
+  const suggestions = getUnsupportedDatasetSuggestions(schema);
+
+  const lines = [
+    "The dataset does not have a supported field combination for bar, line, scatter, or timeline charts.",
+    `Detected fields => date: ${joinFieldNames(dateFields)} | number: ${joinFieldNames(numberFields)} | string: ${joinFieldNames(stringFields)} | boolean: ${joinFieldNames(booleanFields)}`,
+    "Suggested transformations:"
+  ];
+
+  if (suggestions.length === 0) {
+    lines.push("- Add a numeric metric column (duration, cost, delay_hours, etc.) to unlock bar/line/scatter charts.");
+  } else {
+    suggestions.forEach((suggestion) => lines.push(`- ${suggestion}`));
+  }
+
+  return new Error(lines.join("\n"));
+};
+
+const largeDatasetRequiresTransformationError = (
+  schema: InferredSchema,
+  rowCount: number,
+  rowLimit: number
+): Error => {
+  const suggestions = getUnsupportedDatasetSuggestions(schema, true);
+  const lines = [
+    `Large dataset mode triggered: ${rowCount} rows exceed the configured row limit (${rowLimit}).`,
+    "A direct chart is disabled for performance reasons. Choose one of these transformations:"
+  ];
+
+  if (suggestions.length === 0) {
+    lines.push("- Add a numeric metric column and aggregate before charting.");
+  } else {
+    suggestions.forEach((suggestion) => lines.push(`- ${suggestion}`));
+  }
+
+  return new Error(lines.join("\n"));
+};
+
+const aggregateByDateCount = (rows: DataRow[], dateFieldName: string): AggregateFallback | undefined => {
+  const counts = new Map<string, number>();
+
+  rows.forEach((row) => {
+    const value = row[dateFieldName];
+    if (typeof value === "string" && value.trim().length > 0) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  });
+
+  if (counts.size === 0) {
+    return undefined;
+  }
+
+  const aggregatedRows = [...counts.entries()]
+    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    .map(([dateValue, record_count]) => ({
+      [dateFieldName]: dateValue,
+      record_count
+    }));
+
+  return {
+    rows: aggregatedRows,
+    schema: {
+      fields: [
+        { name: dateFieldName, type: "date" },
+        { name: "record_count", type: "number" }
+      ]
+    },
+    preferredChartType: "line",
+    strategy: `Auto-aggregated to daily counts by ${dateFieldName} for large dataset performance.`
+  };
+};
+
+const aggregateByCategoryCount = (rows: DataRow[], categoryFieldName: string): AggregateFallback | undefined => {
+  const counts = new Map<string, number>();
+
+  rows.forEach((row) => {
+    const value = row[categoryFieldName];
+    if (typeof value === "string" && value.trim().length > 0) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  });
+
+  if (counts.size === 0) {
+    return undefined;
+  }
+
+  const aggregatedRows = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_CATEGORY_BUCKETS)
+    .map(([categoryValue, record_count]) => ({
+      [categoryFieldName]: categoryValue,
+      record_count
+    }));
+
+  return {
+    rows: aggregatedRows,
+    schema: {
+      fields: [
+        { name: categoryFieldName, type: "string" },
+        { name: "record_count", type: "number" }
+      ]
+    },
+    preferredChartType: "bar",
+    strategy: `Auto-aggregated to top ${MAX_CATEGORY_BUCKETS} category counts by ${categoryFieldName} for large dataset performance.`
+  };
+};
+
+const chooseLargeDatasetFallback = (rows: DataRow[], schema: InferredSchema): AggregateFallback | undefined => {
+  const dateField = schema.fields.find((field) => field.type === "date");
+  if (dateField) {
+    return aggregateByDateCount(rows, dateField.name);
+  }
+
+  const stringFields = schema.fields.filter((field) => field.type === "string");
+  const categoryField = pickCategoryField(stringFields);
+  if (categoryField) {
+    return aggregateByCategoryCount(rows, categoryField.name);
+  }
+
+  const booleanField = schema.fields.find((field) => field.type === "boolean");
+  if (booleanField) {
+    const boolRows = rows.map((row) => ({
+      [booleanField.name]: String(row[booleanField.name]),
+      record_count: 1
+    }));
+
+    return aggregateByCategoryCount(boolRows, booleanField.name);
+  }
+
+  return undefined;
+};
+
 export interface GeneratedVegaSpec {
   recommendation: ChartRecommendation;
   spec: Record<string, unknown>;
+  largeDataset?: LargeDatasetMetadata;
 }
 
 const chooseRecommendation = (schema: InferredSchema, requestedChartType?: SupportedChartType): ChartRecommendation => {
@@ -114,7 +316,7 @@ const chooseRecommendation = (schema: InferredSchema, requestedChartType?: Suppo
     };
   }
 
-  throw new Error("The dataset does not have a supported field combination for bar, line, scatter, or timeline charts.");
+  throw unsupportedDatasetError(schema);
 };
 
 const toEncodingType = (fieldType: SchemaField["type"]): VegaLiteFieldDef["type"] => {
@@ -127,19 +329,45 @@ const toEncodingType = (fieldType: SchemaField["type"]): VegaLiteFieldDef["type"
   return "nominal";
 };
 
-export const generateVegaSpec = ({ rows, schema, intent, chartType, title }: GenerateSpecInput): GeneratedVegaSpec => {
+export const generateVegaSpec = ({ rows, schema, intent, chartType, title, rowLimit }: GenerateSpecInput): GeneratedVegaSpec => {
   if (rows.length === 0) {
     throw new Error("Cannot generate a chart for an empty dataset.");
   }
 
-  const recommendation = chooseRecommendation(schema, chartType);
-  const xFieldSchema = schema.fields.find((field) => field.name === recommendation.xField);
-  const yFieldSchema = schema.fields.find((field) => field.name === recommendation.yField);
+  const resolvedRowLimit = rowLimit ? Math.max(1, Math.floor(rowLimit)) : DEFAULT_ROW_LIMIT;
+  let workingRows = rows;
+  let workingSchema = schema;
+  let workingChartType = chartType;
+  let largeDataset: LargeDatasetMetadata | undefined;
+
+  if (rows.length > resolvedRowLimit) {
+    const suggestions = getUnsupportedDatasetSuggestions(schema, true);
+    const fallback = chooseLargeDatasetFallback(rows, schema);
+
+    if (!fallback) {
+      throw largeDatasetRequiresTransformationError(schema, rows.length, resolvedRowLimit);
+    }
+
+    workingRows = fallback.rows;
+    workingSchema = fallback.schema;
+    workingChartType = fallback.preferredChartType;
+    largeDataset = {
+      rowCount: rows.length,
+      rowLimit: resolvedRowLimit,
+      fallbackApplied: true,
+      fallbackStrategy: fallback.strategy,
+      suggestions
+    };
+  }
+
+  const recommendation = chooseRecommendation(workingSchema, workingChartType);
+  const xFieldSchema = workingSchema.fields.find((field) => field.name === recommendation.xField);
+  const yFieldSchema = workingSchema.fields.find((field) => field.name === recommendation.yField);
   const endFieldSchema = recommendation.endField
-    ? schema.fields.find((field) => field.name === recommendation.endField)
+    ? workingSchema.fields.find((field) => field.name === recommendation.endField)
     : undefined;
   const colorFieldSchema = recommendation.colorField
-    ? schema.fields.find((field) => field.name === recommendation.colorField)
+    ? workingSchema.fields.find((field) => field.name === recommendation.colorField)
     : undefined;
 
   if (!xFieldSchema || !yFieldSchema) {
@@ -147,6 +375,9 @@ export const generateVegaSpec = ({ rows, schema, intent, chartType, title }: Gen
   }
 
   const resolvedTitle = title ?? intent ?? `${recommendation.chartType} chart`;
+  const resolvedDescription = largeDataset?.fallbackStrategy
+    ? `${largeDataset.fallbackStrategy} ${intent ?? recommendation.reason}`
+    : intent ?? recommendation.reason;
 
   if (recommendation.chartType === "timeline") {
     if (!endFieldSchema) {
@@ -155,12 +386,13 @@ export const generateVegaSpec = ({ rows, schema, intent, chartType, title }: Gen
 
     return {
       recommendation,
+      largeDataset,
       spec: {
         $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-        description: intent ?? recommendation.reason,
+        description: resolvedDescription,
         title: resolvedTitle,
         data: {
-          values: rows
+          values: workingRows
         },
         width: 720,
         height: 420,
@@ -209,12 +441,13 @@ export const generateVegaSpec = ({ rows, schema, intent, chartType, title }: Gen
 
   return {
     recommendation,
+    largeDataset,
     spec: {
       $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-      description: intent ?? recommendation.reason,
+      description: resolvedDescription,
       title: resolvedTitle,
       data: {
-        values: rows
+        values: workingRows
       },
       width: 720,
       height: 420,
