@@ -1,4 +1,4 @@
-# Vega Data Charting Skill
+# Data Charting Skill
 
 This repository contains a GitHub Copilot skill definition and a TypeScript MCP server that can:
 
@@ -12,14 +12,14 @@ This repository contains a GitHub Copilot skill definition and a TypeScript MCP 
 
 The chart workflow is split into two skills:
 
-- `.github/skills/chart-option-planner`: decide which charts are possible and why
+- `.github/skills/chart-planner`: decide which charts are possible and why
 - `.github/skills/chart-builder`: build the selected chart into HTML/PNG artifacts
 
-The existing `.github/skills/vega-data-charting` skill acts as an orchestrator for this two-step flow.
+The existing `.github/skills/data-charting` skill acts as an orchestrator for this two-step flow.
 
 ## Large dataset behavior
 
-- `generate_vega_spec` supports `rowLimit` (default: `5000`).
+- `generate_vega_spec` supports `rowLimit` (default: `10000`).
 - If input row count exceeds the limit, the tool applies automatic aggregation fallback:
 	- date field available: aggregate counts by date (line chart)
 	- otherwise category field available: aggregate counts by category (bar chart)
@@ -32,7 +32,7 @@ The first implementation targets CSV input only. JSON and Excel support are inte
 
 ## Project layout
 
-- `.github/skills/vega-data-charting/SKILL.md`: skill instructions for Copilot
+- `.github/skills/data-charting/SKILL.md`: skill instructions for Copilot
 - `src/`: MCP server and charting tools
 - `examples/`: sample CSV data for local testing
 - `artifacts/`: generated chart previews

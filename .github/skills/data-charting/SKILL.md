@@ -1,11 +1,11 @@
 ---
-name: vega-data-charting
-description: Create charts from CSV data using Vega-Lite. Use this when the user asks to visualize a tabular dataset, inspect columns, or generate a chart preview from a CSV file.
+name: charto
+description: Create charts from CSV data. Use this when the user asks to visualize a tabular dataset, inspect columns, or generate a chart preview from a CSV file.
 ---
 
 Use this skill as an orchestrator over two sub-skills:
 
-- `chart-option-planner`: decides what chart options are possible.
+- `chart-planner`: decides what chart options are possible.
 - `chart-builder`: builds artifacts for the selected option.
 
 Recommended workflow:

@@ -24,24 +24,23 @@ const buildHtml = (title: string, spec: Record<string, unknown>): string => {
       :root {
         color-scheme: light;
         font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-        background: linear-gradient(135deg, #f7f4ea 0%, #e4eef8 100%);
         color: #152033;
       }
       body {
         margin: 0;
         min-height: 100vh;
-        display: grid;
-        place-items: center;
+        background: #f0f4f8;
         padding: 32px;
+        box-sizing: border-box;
       }
       main {
-        width: min(960px, 100%);
-        background: rgba(255, 255, 255, 0.82);
+        display: inline-block;
+        min-width: max-content;
+        background: #ffffff;
         border: 1px solid rgba(21, 32, 51, 0.08);
         border-radius: 24px;
         box-shadow: 0 24px 80px rgba(31, 58, 94, 0.12);
         padding: 24px;
-        backdrop-filter: blur(14px);
       }
       h1 {
         margin: 0 0 16px;
@@ -49,6 +48,14 @@ const buildHtml = (title: string, spec: Record<string, unknown>): string => {
       }
       #vis {
         min-height: 420px;
+      }
+      #vis-error {
+        color: #c0392b;
+        font-family: monospace;
+        padding: 12px;
+        background: #fdecea;
+        border-radius: 8px;
+        display: none;
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
@@ -59,17 +66,34 @@ const buildHtml = (title: string, spec: Record<string, unknown>): string => {
     <main>
       <h1>${title}</h1>
       <div id="vis"></div>
+      <pre id="vis-error"></pre>
     </main>
     <script>
       const spec = ${JSON.stringify(spec, null, 2)};
-      vegaEmbed('#vis', spec, { actions: true });
+      vegaEmbed('#vis', spec, { actions: true }).catch(function(err) {
+        var el = document.getElementById('vis-error');
+        el.style.display = 'block';
+        el.textContent = 'Chart render error: ' + err.message;
+      });
     </script>
   </body>
 </html>`;
 };
 
+const PNG_MAX_WIDTH = 3000;
+
+/** For step-based widths, cap the PNG render width to avoid huge/blank canvases. */
+const capSpecWidth = (spec: Record<string, unknown>): Record<string, unknown> => {
+  const width = spec.width;
+  if (width !== null && typeof width === "object" && "step" in (width as object)) {
+    return { ...spec, width: PNG_MAX_WIDTH };
+  }
+  return spec;
+};
+
 const renderToPng = async (spec: Record<string, unknown>): Promise<Buffer> => {
-  const vegaSpec = vegaLite.compile(spec as unknown as vegaLite.TopLevelSpec).spec;
+  const capped = capSpecWidth(spec);
+  const vegaSpec = vegaLite.compile(capped as unknown as vegaLite.TopLevelSpec).spec;
   const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
   await view.runAsync();
   const canvas = await view.toCanvas(1);

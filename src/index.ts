@@ -75,7 +75,7 @@ const jsonResult = (payload: unknown): CallToolResult => ({
 
 const server = new Server(
   {
-    name: "vega-data-charting",
+    name: "data-charting",
     version: "0.1.0"
   },
   {

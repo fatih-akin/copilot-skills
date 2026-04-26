@@ -1,14 +1,15 @@
 {
-  "name": "copilot-skills-vega-charting",
+  "name": "copilot-skills-data-charting",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Copilot skill and MCP server for charting CSV data with Vega-Lite.",
+  "description": "Copilot skill and MCP server for charting CSV data.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "chart:build": "npm run build && node scripts/build-chart-preview.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

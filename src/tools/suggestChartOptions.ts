@@ -34,7 +34,7 @@ export interface SuggestedChartOptionsResult {
   notes: string[];
 }
 
-const DEFAULT_ROW_LIMIT = 5000;
+const DEFAULT_ROW_LIMIT = 10000;
 
 const pickCategoryField = (stringFields: SchemaField[]): SchemaField | undefined => {
   if (stringFields.length === 0) {
@@ -102,6 +102,42 @@ const pushDirectOptions = (schema: InferredSchema, options: ChartOption[]): void
       recommended: false
     });
   }
+
+  if (dateFields.length > 0 && numberFields.length > 0) {
+    options.push({
+      id: "direct-area",
+      title: `${dateFields[0].name} trend (area)`,
+      chartType: "area",
+      reason: `${dateFields[0].name} is temporal and ${numberFields[0].name} is numeric — area emphasizes cumulative magnitude.`,
+      requiresTransformation: false,
+      transformation: { kind: "none" },
+      recommended: false
+    });
+  }
+
+  if (numberFields.length > 0) {
+    options.push({
+      id: "direct-histogram",
+      title: `Distribution of ${numberFields[0].name}`,
+      chartType: "histogram",
+      reason: `${numberFields[0].name} is numeric — a histogram reveals its value distribution and spread.`,
+      requiresTransformation: false,
+      transformation: { kind: "none" },
+      recommended: false
+    });
+  }
+
+  if (stringFields.length > 0 && numberFields.length > 0) {
+    options.push({
+      id: "direct-boxplot",
+      title: `${numberFields[0].name} distribution by ${stringFields[0].name}`,
+      chartType: "boxplot",
+      reason: `${stringFields[0].name} is categorical and ${numberFields[0].name} is numeric — boxplot shows median, IQR, and outliers per group.`,
+      requiresTransformation: false,
+      transformation: { kind: "none" },
+      recommended: false
+    });
+  }
 };
 
 const pushTransformedOptions = (schema: InferredSchema, options: ChartOption[], largeDatasetMode: boolean): void => {
@@ -155,6 +191,41 @@ const pushTransformedOptions = (schema: InferredSchema, options: ChartOption[], 
         groupBy: [categoryField.name],
         valueField: booleanFields[0].name,
         generatedValueField: `${booleanFields[0].name}_sum`
+      },
+      recommended: false
+    });
+  }
+
+  if (categoryField) {
+    options.push({
+      id: "agg-category-count-pie",
+      title: `Pie chart: share by ${categoryField.name}`,
+      chartType: "pie",
+      reason: `Counting records by ${categoryField.name} shows proportional share — best with Top 10 filter for readability.`,
+      requiresTransformation: true,
+      transformation: {
+        kind: "group_count",
+        groupBy: [categoryField.name],
+        generatedValueField: "record_count",
+        notes: "Filter to Top 10 categories for readability."
+      },
+      recommended: false
+    });
+  }
+
+  if (stringFields.length >= 2 && categoryField) {
+    const secondField = stringFields.find((f) => f.name !== categoryField.name) ?? stringFields[1];
+    options.push({
+      id: "agg-two-category-heatmap",
+      title: `Heatmap: ${categoryField.name} × ${secondField.name}`,
+      chartType: "heatmap",
+      reason: `Two categorical fields (${categoryField.name}, ${secondField.name}) can be crossed to show record density as a heatmap.`,
+      requiresTransformation: true,
+      transformation: {
+        kind: "group_count",
+        groupBy: [categoryField.name, secondField.name],
+        generatedValueField: "record_count",
+        notes: "Filter to top categories per axis to keep the grid readable."
       },
       recommended: false
     });

@@ -13,7 +13,7 @@ export interface InferredSchema {
   fields: SchemaField[];
 }
 
-export type SupportedChartType = "bar" | "line" | "scatter" | "timeline" | "gantt";
+export type SupportedChartType = "bar" | "line" | "scatter" | "timeline" | "gantt" | "area" | "pie" | "histogram" | "boxplot" | "heatmap";
 
 export interface ChartRecommendation {
   chartType: SupportedChartType;

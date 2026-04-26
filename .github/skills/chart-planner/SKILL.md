@@ -1,5 +1,5 @@
 ---
-name: chart-option-planner
+name: chart-planner
 description: Analyze CSV data and propose chart options with reasons and transformation plans. Use this first in a two-step chart workflow.
 ---
 
