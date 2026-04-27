@@ -24,5 +24,5 @@ This reference explains how the single `data-charting` skill should behave.
 
 ## Shareable Runtime
 
-- Prebuilt runtime is provided in `../scripts/built/dist`.
+- Prebuilt runtime is provided in `../scripts/build/dist`.
 - Share this skill folder so others can run without rebuilding TypeScript first.
