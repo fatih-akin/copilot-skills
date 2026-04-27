@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
     "csv-parse": "^5.5.6",
     "vega": "^6.1.2",

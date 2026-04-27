@@ -125,9 +125,20 @@ const renderToPng = async (spec: Record<string, unknown>): Promise<Buffer | null
     const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
     await view.runAsync();
     const svg = await view.toSVG(1);
-    const resvg = new Resvg(svg);
+    // Ensure text elements have explicit font-family styling for PNG rendering
+    const svgWithFonts = svg.replace(
+      /<svg/,
+      '<svg style="font-family: IBM Plex Sans, Segoe UI, sans-serif"'
+    );
+    const resvg = new Resvg(svgWithFonts, {
+      font: {
+        loadSystemFonts: true
+      }
+    });
     return Buffer.from(resvg.render().asPng());
-  } catch {
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.warn(`PNG rendering failed (will skip PNG output): ${errorMsg}`);
     return null;
   }
 };

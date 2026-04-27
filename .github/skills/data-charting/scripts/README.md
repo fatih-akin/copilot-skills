@@ -4,31 +4,43 @@ This folder contains the prebuilt runtime for the `data-charting` skill.
 
 ## Contents
 
-- `build/dist/bundle.mjs` — **single-file bundle** (esbuild, all JS deps included — use this on other machines)
-- `build/dist/*.js` — TypeScript compilation output (still requires `node_modules`, for local dev)
+- `build/dist/bundle.mjs` — **single-file bundle** (esbuild, all JS deps included)
+- `build/dist/index_bg.wasm` — **WASM binary for PNG rendering** (bundled, cross-platform)
+- `build/dist/*.js` — TypeScript compilation output (dev reference)
 
-## Running on another machine
+## Zero-Dependency Distribution
 
-`bundle.mjs` contains all JavaScript dependencies inline — **no `npm install` needed** for the core flow.
+`bundle.mjs` + `index_bg.wasm` are **fully self-contained** — no `npm install` needed.
 
-HTML artifacts work out of the box with zero setup.
+**All features work out of the box:**
 
-PNG export is optional. If you want PNG output, install one native package:
+✅ CSV loading  
+✅ Schema inference  
+✅ Chart recommendation  
+✅ Vega-Lite spec generation  
+✅ HTML artifact rendering  
+✅ PNG artifact rendering (WASM-based, no native module compilation required)  
 
-```bash
-npm install @resvg/resvg-js    # downloads prebuilt binary, no build tools needed
-```
+## Usage on another machine
 
-If `@resvg/resvg-js` is not installed, `render_chart_preview` silently skips PNG and returns HTML only (`pngSkipped: true`).
+1. Copy the entire `.github/skills/data-charting/` folder to your destination
+2. Use `scripts/build/dist/bundle.mjs` as your MCP server entrypoint
+3. No additional `npm install` — everything is bundled
 
 ## Rebuilding
 
 From the repo root:
 
 ```bash
-npm run build    # runs tsc + esbuild bundle in one step
+npm run build    # runs tsc + esbuild bundle + WASM copy
 ```
+
+The build script:
+- Compiles TypeScript to `.github/skills/data-charting/scripts/build/dist/`
+- Bundles all dependencies into `bundle.mjs` using esbuild
+- Copies WASM binary (`index_bg.wasm`) to dist folder
+- Result is ready to distribute
 
 ## Why this exists
 
-The `bundle.mjs` snapshot lets others use this skill without installing all npm dependencies from scratch.
+The `bundle.mjs` + `index_bg.wasm` snapshot lets others use this skill without installing npm dependencies or native modules. Completely portable, cross-platform, and maintenance-free.

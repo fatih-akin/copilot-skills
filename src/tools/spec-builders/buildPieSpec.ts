@@ -10,15 +10,41 @@ export const buildPieSpec = (
   description,
   title,
   data: { values: rows },
-  width: 420,
-  height: 420,
-  mark: { type: "arc", innerRadius: 0 },
-  encoding: {
-    theta: { field: recommendation.yField, type: "quantitative", title: recommendation.yField },
-    color: { field: recommendation.xField, type: "nominal", title: recommendation.xField },
-    tooltip: [
-      { field: recommendation.xField, type: "nominal" },
-      { field: recommendation.yField, type: "quantitative" }
-    ]
+  width: 500,
+  height: 500,
+  layer: [
+    {
+      mark: { type: "arc", innerRadius: 0, cornerRadius: 4 },
+      encoding: {
+        theta: { field: recommendation.yField, type: "quantitative" },
+        color: { field: recommendation.xField, type: "nominal", legend: { labelFontSize: 12, titleFontSize: 13 } },
+        tooltip: [
+          { field: recommendation.xField, type: "nominal", title: "Category" },
+          { field: recommendation.yField, type: "quantitative", title: "Count" }
+        ]
+      }
+    },
+    {
+      mark: { type: "text", radiusOffset: 60, fontSize: 11 },
+      encoding: {
+        theta: { field: recommendation.yField, type: "quantitative" },
+        text: { field: recommendation.yField, type: "quantitative" }
+      }
+    }
+  ],
+  config: {
+    legend: {
+      labelFontSize: 12,
+      titleFontSize: 13,
+      strokeColor: "gray",
+      fillColor: "#EEEEEE"
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "bold",
+      anchor: "start",
+      color: "#152033"
+    },
+    font: "IBM Plex Sans, Segoe UI, sans-serif"
   }
 });

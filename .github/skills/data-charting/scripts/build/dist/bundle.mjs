@@ -19267,16 +19267,42 @@ var buildPieSpec = (rows, recommendation, title2, description2) => ({
   description: description2,
   title: title2,
   data: { values: rows },
-  width: 420,
-  height: 420,
-  mark: { type: "arc", innerRadius: 0 },
-  encoding: {
-    theta: { field: recommendation.yField, type: "quantitative", title: recommendation.yField },
-    color: { field: recommendation.xField, type: "nominal", title: recommendation.xField },
-    tooltip: [
-      { field: recommendation.xField, type: "nominal" },
-      { field: recommendation.yField, type: "quantitative" }
-    ]
+  width: 500,
+  height: 500,
+  layer: [
+    {
+      mark: { type: "arc", innerRadius: 0, cornerRadius: 4 },
+      encoding: {
+        theta: { field: recommendation.yField, type: "quantitative" },
+        color: { field: recommendation.xField, type: "nominal", legend: { labelFontSize: 12, titleFontSize: 13 } },
+        tooltip: [
+          { field: recommendation.xField, type: "nominal", title: "Category" },
+          { field: recommendation.yField, type: "quantitative", title: "Count" }
+        ]
+      }
+    },
+    {
+      mark: { type: "text", radiusOffset: 60, fontSize: 11 },
+      encoding: {
+        theta: { field: recommendation.yField, type: "quantitative" },
+        text: { field: recommendation.yField, type: "quantitative" }
+      }
+    }
+  ],
+  config: {
+    legend: {
+      labelFontSize: 12,
+      titleFontSize: 13,
+      strokeColor: "gray",
+      fillColor: "#EEEEEE"
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "bold",
+      anchor: "start",
+      color: "#152033"
+    },
+    font: "IBM Plex Sans, Segoe UI, sans-serif"
   }
 });
 
@@ -72639,9 +72665,19 @@ var renderToPng = async (spec) => {
     const view = new View(parse9(vegaSpec), { renderer: "none" });
     await view.runAsync();
     const svg = await view.toSVG(1);
-    const resvg = new Resvg3(svg);
+    const svgWithFonts = svg.replace(
+      /<svg/,
+      '<svg style="font-family: IBM Plex Sans, Segoe UI, sans-serif"'
+    );
+    const resvg = new Resvg3(svgWithFonts, {
+      font: {
+        loadSystemFonts: true
+      }
+    });
     return Buffer.from(resvg.render().asPng());
-  } catch {
+  } catch (error4) {
+    const errorMsg = error4 instanceof Error ? error4.message : String(error4);
+    console.warn(`PNG rendering failed (will skip PNG output): ${errorMsg}`);
     return null;
   }
 };
