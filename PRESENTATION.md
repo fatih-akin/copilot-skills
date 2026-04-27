@@ -21,7 +21,7 @@ Copilot bu cümleyi alıyor, veriyi analiz ediyor, en uygun grafik türünü ön
 
 ---
 
-## 2. Çözüm: `data-charting` Skill
+## 2. Çözüm: `charto` Skill
 
 ### Tek Skill, Uçtan Uca Akış
 
@@ -29,7 +29,7 @@ Copilot bu cümleyi alıyor, veriyi analiz ediyor, en uygun grafik türünü ön
 Kullanıcı Sorusu (Doğal Dil)
         │
         ▼
-   data-charting
+   charto
         │
         ├─ loadTabularFile      ← CSV'yi yükle ve ayrıştır
         ├─ inferSchema          ← Sütun tiplerini otomatik tespit et
@@ -105,7 +105,7 @@ Kullanıcı sadece bir cümle yazar — skill geri kalan her şeyi halleder.
 | Grafik Öneri | Kural tabanlı `suggestChartOptions` |
 | Entegrasyon | GitHub Copilot Skill (`.github/skills/`) |
 
-Build çıktısı `.github/skills/data-charting/scripts/build/dist/` altına yazılır ve repository ile birlikte paylaşılır — kurulum gerekmez.
+Build çıktısı `.github/skills/charto/scripts/build/dist/` altına yazılır ve repository ile birlikte paylaşılır — kurulum gerekmez.
 
 ---
 
@@ -253,4 +253,4 @@ CSV │ Excel │ JSON │ XML │ MCP DB (SQL)
 
 ---
 
-*Bu sunum, [copilot-skills](.) projesinde geliştirilen `data-charting` skill'inin Nisan 2026 itibarıyla mevcut durumunu ve ileriye dönük vizyonunu yansıtmaktadır.*
+*Bu sunum, [copilot-skills](.) projesinde geliştirilen `charto` skill'inin Nisan 2026 itibarıyla mevcut durumunu ve ileriye dönük vizyonunu yansıtmaktadır.*

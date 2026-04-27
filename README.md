@@ -12,7 +12,7 @@ This repository contains a GitHub Copilot skill definition and a TypeScript MCP 
 
 The chart workflow now runs as a single skill:
 
-- `.github/skills/data-charting`: end-to-end flow for analysis, recommendation, and artifact build
+- `.github/skills/charto`: end-to-end flow for analysis, recommendation, and artifact build
 
 Inside the skill folder:
 
@@ -36,7 +36,7 @@ The first implementation targets CSV input only. JSON and Excel support are inte
 
 ## Project layout
 
-- `.github/skills/data-charting/`: unified skill folder (`SKILL.md`, `references`, `scripts`)
+- `.github/skills/charto/`: unified skill folder (`SKILL.md`, `references`, `scripts`)
 - `src/`: MCP server and charting tools
 - `examples/`: sample CSV data for local testing
 - `artifacts/`: generated chart previews

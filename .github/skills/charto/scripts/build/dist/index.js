@@ -57,7 +57,7 @@ const jsonResult = (payload) => ({
     ]
 });
 const server = new Server({
-    name: "data-charting",
+    name: "charto",
     version: "0.1.0"
 }, {
     capabilities: {

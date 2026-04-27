@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": ".github/skills/data-charting/scripts/build/dist",
+    "outDir": ".github/skills/charto/scripts/build/dist",
     "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,

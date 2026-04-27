@@ -72964,7 +72964,7 @@ var jsonResult = (payload) => ({
 });
 var server = new Server(
   {
-    name: "data-charting",
+    name: "charto",
     version: "0.1.0"
   },
   {

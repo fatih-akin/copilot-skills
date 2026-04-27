@@ -75,7 +75,7 @@ const jsonResult = (payload: unknown): CallToolResult => ({
 
 const server = new Server(
   {
-    name: "data-charting",
+    name: "charto",
     version: "0.1.0"
   },
   {
