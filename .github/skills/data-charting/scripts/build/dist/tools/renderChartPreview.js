@@ -1,5 +1,6 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createRequire } from "node:module";
 import * as vega from "vega";
 import * as vegaLite from "vega-lite";
 const buildHtml = (title, spec) => {
@@ -77,9 +78,32 @@ const capSpecWidth = (spec) => {
     }
     return spec;
 };
+let wasmInitialized = false;
+const resolveWasmPath = async () => {
+    // When running from bundle.mjs, the .wasm file is copied alongside it
+    const { fileURLToPath } = await import("node:url");
+    const bundleDir = path.dirname(fileURLToPath(import.meta.url));
+    const bundleSidecar = path.join(bundleDir, "index_bg.wasm");
+    try {
+        await readFile(bundleSidecar);
+        return bundleSidecar;
+    }
+    catch {
+        // Fallback: resolve from node_modules for local dev
+        const require = createRequire(import.meta.url);
+        return require.resolve("@resvg/resvg-wasm/index_bg.wasm");
+    }
+};
 const renderToPng = async (spec) => {
     try {
-        const { Resvg } = await import("@resvg/resvg-js");
+        const resvgWasm = await import("@resvg/resvg-wasm");
+        if (!wasmInitialized) {
+            const wasmPath = await resolveWasmPath();
+            const wasmBuffer = await readFile(wasmPath);
+            await resvgWasm.initWasm(wasmBuffer);
+            wasmInitialized = true;
+        }
+        const { Resvg } = resvgWasm;
         const capped = capSpecWidth(spec);
         const vegaSpec = vegaLite.compile(capped).spec;
         const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });

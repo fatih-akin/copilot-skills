@@ -6,7 +6,7 @@
   "description": "Copilot skill and MCP server for charting CSV data.",
   "scripts": {
     "build": "tsc -p tsconfig.json && npm run bundle",
-    "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --external:canvas --external:@resvg/resvg-js --outfile=.github/skills/data-charting/scripts/build/dist/bundle.mjs",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --external:canvas --loader:.wasm=binary --outfile=.github/skills/data-charting/scripts/build/dist/bundle.mjs && cp node_modules/@resvg/resvg-wasm/index_bg.wasm .github/skills/data-charting/scripts/build/dist/index_bg.wasm",
     "dev": "tsx src/index.ts",
     "start": "node .github/skills/data-charting/scripts/build/dist/bundle.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@resvg/resvg-js": "^2.6.2",
+    "@resvg/resvg-wasm": "^2.6.2",
     "csv-parse": "^5.5.6",
     "vega": "^6.1.2",
     "vega-embed": "^7.0.2",
