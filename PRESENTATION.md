@@ -4,219 +4,253 @@
 
 ---
 
-## 1. Proje Özeti
+## 1. Problem & Fırsat
 
-Bu proje, GitHub Copilot üzerine inşa edilmiş **tek birleşik skill** içerir. Kullanıcıların herhangi bir CSV dosyasını doğal dil ile sorarak saniyeler içinde interaktif grafiklere dönüştürmesini sağlar.
+Bugün bir ekip üyesi veriyi görmek istediğinde şu yolu izliyor:
 
-Kodlama bilgisi gerekmez. Veri analizi deneyimi gerekmez. Sadece sorun — grafik gelsin.
+1. Excel aç → pivot table kur → grafik sihirbazıyla boğuş
+2. Ya da: Python/Pandas öğren → kütüphane kur → kod yaz → hata düzelt
 
----
+Her iki yol da zaman alır, teknik engel koyar ve tekrar edilemez.
 
-## 2. Geliştirilen Birleşik Skill
+**Bu proje bu engeli kaldırıyor.**
 
-### 2.1 `data-charting` — Uçtan Uca Tek Skill
+> *"Bu CSV'den ülke bazlı organizasyon sayısını gösteren bir bar grafik çiz."*
 
-> *"Bu veriden bana ülke bazlı organizasyon sayılarını gösteren bir grafik çiz."*
-
-Kullanıcının tek bir cümleyle tam veri görselleştirme iş akışını başlatmasını sağlar.
-
-**İş Akışı:**
-```
-CSV Dosyası → Şema Çıkarımı → Seçenek Önerisi → Kullanıcı Seçimi → Grafik Üretimi → HTML/PNG Artifact
-```
-
-**Özellikler:**
-- Tek skill içinde analiz + öneri + build + render akışı
-- 10.000+ satırlık büyük veri setlerini otomatik algılama (Large Dataset Mode)
-- Gereksiz yüklemeleri önlemek için PNG base64'ü yalnızca istek üzerine üretme
-- Sütun isimlerini icat etmeyen, yalnızca gerçek veriye dayalı kararlar
-- Dönüşüm gerektiren grafik türlerinde kontrollü agregasyon
-
-**Klasör Yapısı (Skill):**
-- `.github/skills/data-charting/SKILL.md`
-- `.github/skills/data-charting/references/ref1.md`
-- `.github/skills/data-charting/scripts/*`
-- `.github/skills/data-charting/scripts/built/dist/*` (paylaşım için build alınmış hali)
+Copilot bu cümleyi alıyor, veriyi analiz ediyor, en uygun grafik türünü öneriyor ve saniyeler içinde interaktif bir HTML artifact üretiyor. Kod yok. Ayar yok. Öğrenme eğrisi yok.
 
 ---
 
-## 3. Teknik Altyapı
+## 2. Çözüm: `data-charting` Skill
 
-| Bileşen | Teknoloji |
-|---|---|
-| Dil | TypeScript (ESM) |
-| Grafik Motoru | Vega-Lite v5 |
-| Interaktif HTML | vega-embed CDN |
-| Sunucu Tarafı Render | vega (Node.js) |
-| Şema Çıkarımı | Özel `inferSchema` motoru |
-| Grafik Öneri | Kural tabanlı `suggestChartOptions` |
-
-### Desteklenen Grafik Türleri
-
-| Tür | Kullanım Alanı |
-|---|---|
-| **Bar** | Kategorik karşılaştırma, sıralama |
-| **Scatter** | İki sayısal alan arasındaki ilişki |
-| **Histogram** | Sayısal dağılım analizi |
-| **Boxplot** | Grup bazlı medyan/aykırı değer analizi |
-| **Pie** | Oran/pay görselleştirme (Top-N filtresi ile) |
-| **Heatmap** | İki kategorik alan × yoğunluk |
-| **Timeline** | Gantt / zaman bazlı planlama |
-
----
-
-## 4. Çözülen Gerçek Problemler
-
-Bu oturumda üretilen artifact'lar gerçek iş senaryolarını yansıtır:
-
-### 4.1 Organizasyon Verisi (`organizations-10000.csv` — 10.000 satır)
-
-| Soru | Grafik | Artifact |
-|---|---|---|
-| Ülke bazlı kaç org var? | Bar (243 ülke) | `org-bar-country-count.html` |
-| En çok olan 5 ülke hangi sektörlerde? | Stacked Bar | `org-bar-top5-country-industry.html` |
-| Türkiye ve Uruguay'ın sektör dağılımı? | Heatmap | `org-heatmap-tr-uy-industry.html` |
-
-**Elde edilen insight:** Congo (90 org), Korea (84), Argentina (58) en yoğun ülkeler. Türkiye'de 41, Uruguay'da 38 organizasyon.
-
-### 4.2 Ürün Verisi (`products-1000.csv` — 1.000 satır)
-
-| Soru | Grafik | Artifact |
-|---|---|---|
-| Fiyat dağılımı nasıl? | Scatter (Index × Price) | `products-1000-scatter-index-price.html` |
-| Direkt bar görünümü | Bar | `products-1000-direct-bar.html` |
-
-### 4.3 Uçak Bakım Verisi (`aircraft-maintenance-findings.csv`)
-
-5 farklı grafik seçeneğinin tamamı üretildi: Line, Stacked Bar, Bar, Pie, Heatmap.
-
----
-
-## 5. Değer Önerisi
-
-### Zaman Tasarrufu
-
-| Geleneksel Yöntem | Bu Skill ile |
-|---|---|
-| Python/Pandas öğren (günler) | 0 öğrenme eğrisi |
-| Grafik kütüphanesi kur ve yönet | Hazır altyapı |
-| Her analiz için kod yaz (saatler) | Doğal dil + saniyeler |
-| HTML/CSS ile görsel hazırla | Otomatik üretim |
-
-### Kapsadığı Kullanıcı Profilleri
-
-- **Veri analistler** — Keşif analizini hızlandırır
-- **Ürün yöneticileri** — Kod yazmadan veriyi görselleştirir
-- **Satış/pazarlama ekipleri** — Müşteri verilerini sunum kalitesinde gösterir
-- **Yöneticiler** — Karar destek grafikleri dakikalar içinde
-
-### Ölçeklenebilirlik
-
-- 10 satır ÷ 10.000 satır — aynı komut, otomatik uyarlama
-- Yeni CSV → anında analiz, sıfır konfigürasyon
-- Tarayıcı sınırları, canvas overflow, PNG kalitesi — tüm edge case'ler çözülü
-
----
-
-## 6. Üretilen Çıktı Örnekleri
-
-### Interaktif HTML
-- Tooltip: her veri noktasına hover ile detay
-- Zoom/Pan: büyük grafiklerde navigasyon
-- Actions menüsü: PNG, SVG export; editör açma
-
-### PNG (Raporlar İçin)
-- Yüksek kalite, maksimum 3.000px genişlik
-- Sunumlara, e-postalara, PDF raporlara direkt yapıştırılabilir
-
----
-
-## 7. Mimari
+### Tek Skill, Uçtan Uca Akış
 
 ```
 Kullanıcı Sorusu (Doğal Dil)
         │
         ▼
-   data-charting (tek skill)
+   data-charting
         │
-        ├─ loadTabularFile
-        ├─ inferSchema
-        ├─ suggestChartOptions
-        ├─ generateVegaSpec
-        │    ├─ buildGenericSpec
+        ├─ loadTabularFile      ← CSV'yi yükle ve ayrıştır
+        ├─ inferSchema          ← Sütun tiplerini otomatik tespit et
+        ├─ suggestChartOptions  ← Veriye uygun grafik seçenekleri sun
+        ├─ generateVegaSpec     ← Vega-Lite spec üret
+        │    ├─ buildGenericSpec    (bar, scatter, line, boxplot)
         │    ├─ buildHeatmapSpec
         │    ├─ buildHistogramSpec
         │    ├─ buildPieSpec
         │    └─ buildTimelineSpec
-        └─ renderChartPreview
-             ├─ HTML artifact
-             └─ PNG artifact
+        └─ renderChartPreview   ← Çıktı üret
+             ├─ HTML artifact   (interaktif, tarayıcıda açılır)
+             └─ PNG artifact    (sunum, rapor, e-posta için)
 ```
 
----
-
-## 8. Sonraki Adımlar (Öneriler)
-
-1. **Yeni veri kaynakları** — Excel (.xlsx), JSON, API yanıtları için destek
-2. **Çok dosya karşılaştırma** — İki CSV'yi aynı grafikte birleştirme
-3. **Otomatik rapor üretimi** — Bir veri setinden tüm anlamlı grafikleri tek seferde üret
-4. **Renk teması desteği** — Marka renklerine göre grafik paleti
-5. **Paylaşım entegrasyonu** — Confluence, Notion, Slack'e direkt gönderim
+Kullanıcı sadece bir cümle yazar — skill geri kalan her şeyi halleder.
 
 ---
 
-## 9. MVP Kapsamı ve Genişleme Yol Haritası
+## 3. Mevcut Özellikler (MVP — Nisan 2026)
 
-### Mevcut MVP: CSV
+### 3.1 Desteklenen Veri Kaynağı
 
-Bu ilk sürüm (MVP) yalnızca **CSV dosyaları** üzerinde çalışmaktadır. Tüm temel iş akışı, şema çıkarımı, grafik öneri motoru ve render altyapısı bu format üzerinde test edilmiş ve kararlı hale getirilmiştir.
+| Kaynak | Durum |
+|---|---|
+| CSV | ✅ Destekleniyor |
+| Excel (.xlsx) | Yol haritasında |
+| JSON / REST API | Yol haritasında |
+| MCP Database (SQL) | Yol haritasında |
+
+### 3.2 Desteklenen Grafik Türleri
+
+| Tür | Kullanım Alanı | Özel Özellik |
+|---|---|---|
+| **Bar** | Kategorik karşılaştırma, sıralama | Aggregated / Stacked mod |
+| **Scatter** | İki sayısal alan arasındaki ilişki | |
+| **Histogram** | Sayısal dağılım analizi | Otomatik bin hesabı |
+| **Boxplot** | Grup bazlı medyan/aykırı değer | |
+| **Pie** | Oran/pay görselleştirme | Top-N filtresi ile |
+| **Heatmap** | İki kategori × yoğunluk | |
+| **Timeline** | Gantt / zaman bazlı planlama | Başlangıç-bitiş alanları |
+
+### 3.3 Akıllı Davranışlar
+
+- **Large Dataset Mode:** 10.000+ satırlık dosyalar otomatik algılanır, agregasyon önerileri öne çıkar
+- **Hallüsinasyon koruması:** Skill yalnızca CSV'de gerçekte var olan sütunları kullanır, sütun ismi uydurmaz
+- **Verimli render:** PNG base64 yalnızca istek üzerine eklenir — büyük veri setlerinde context overflow önlenir
+- **Kural tabanlı öneri motoru:** Sütun tipleri (sayısal, kategorik, tarih) analiz edilerek anlamlı grafik seçenekleri sıralanır
+
+### 3.4 Çıktı Kalitesi
+
+**İnteraktif HTML**
+- Her veri noktasına hover ile tooltip
+- Büyük grafiklerde zoom / pan
+- Actions menüsü: PNG export, SVG export, editörde aç
+
+**PNG (Raporlar İçin)**
+- Yüksek çözünürlük, maksimum 3.000px genişlik
+- Sunumlara, PDF raporlara, e-postalara direkt yapıştırılabilir
 
 ---
 
-### Planlanan Veri Kaynakları
+## 4. Teknik Altyapı
 
-Aynı skill mimarisi, `loadTabularFile` aracının genişletilmesiyle aşağıdaki kaynaklardan da veri okuyabilir hale gelebilir — **grafik üretim zincirinin geri kalanı değişmeden çalışır.**
+| Bileşen | Teknoloji |
+|---|---|
+| Dil | TypeScript (ESM) |
+| Çalışma Zamanı | Node.js (MCP stdio sunucu) |
+| Grafik Motoru | Vega-Lite v5 |
+| İnteraktif HTML | vega-embed CDN |
+| Sunucu Tarafı Render | vega (Node.js canvas) |
+| Şema Çıkarımı | Özel `inferSchema` motoru |
+| Grafik Öneri | Kural tabanlı `suggestChartOptions` |
+| Entegrasyon | GitHub Copilot Skill (`.github/skills/`) |
 
-#### 📄 Excel (.xlsx / .xls)
-- `xlsx` veya `exceljs` kütüphanesi ile sayfa okuma
-- Çok sayfalı dosyalarda hangi sayfanın kullanılacağını sorma
-- Hücre formatları (tarih, para birimi) şema çıkarımına dahil edilebilir
-
-#### 🗂️ JSON
-- Düz dizi (`[{...}, {...}]`) ve iç içe nesne desteği
-- Alan düzleştirme (flatten) ile karmaşık yapılar normalize edilebilir
-- REST API yanıtları doğrudan beslenebilir
-
-#### 📋 XML
-- `fast-xml-parser` ile tekrar eden eleman setlerinin satır dizisine dönüştürülmesi
-- SOAP/XML tabanlı kurumsal sistemlerle entegrasyon
-
-#### 🔌 MCP Database (Model Context Protocol)
-- MCP sunucusu üzerinden SQL sorgusu çalıştırma (`mcp_azure_mcp_sql`, `mcp_azure_mcp_postgres`, `mcp_azure_mcp_cosmos` vb.)
-- Kullanıcı doğal dil sorusu → SQL → grafik zinciri
-- **Örnek:** *"Son 6 aydaki ülke bazlı satışları göster"* → MCP SQL query → bar chart
-- Şema çıkarımı sorgu sonucu üzerinden otomatik yapılır — önceden tablo bilgisi gerekmez
+Build çıktısı `.github/skills/data-charting/scripts/build/dist/` altına yazılır ve repository ile birlikte paylaşılır — kurulum gerekmez.
 
 ---
 
-### Mimari Karşılaştırması
+## 5. Gerçek Kullanım Örnekleri
+
+### Organizasyon Verisi (10.000 satır)
+
+| Kullanıcı Sorusu | Üretilen Grafik |
+|---|---|
+| *"Ülke bazlı organizasyon sayısını göster"* | Bar — 243 ülke |
+| *"En kalabalık 5 ülkenin sektör dağılımı?"* | Stacked Bar |
+| *"Türkiye ve Uruguay'ı sektör bazlı karşılaştır"* | Heatmap |
+
+**Insight:** Congo (90), Korea (84), Argentina (58) en yoğun ülkeler. Türkiye'de 41, Uruguay'da 38 organizasyon.
+
+### Ürün Verisi (1.000 satır)
+
+| Kullanıcı Sorusu | Üretilen Grafik |
+|---|---|
+| *"Fiyat dağılımı nasıl görünüyor?"* | Scatter (Index × Price) |
+| *"Kategori bazlı ürün sayısı?"* | Bar |
+
+### Uçak Bakım Verisi
+
+Tek istekle 5 farklı grafik seçeneği (Line, Stacked Bar, Bar, Pie, Heatmap) aynı anda sunuldu — kullanıcı seçti, artifact üretildi.
+
+---
+
+## 6. Değer Önerisi
+
+### Zaman Tasarrufu
+
+| Geleneksel Yöntem | Bu Skill ile |
+|---|---|
+| Python/Pandas öğren → saatler | 0 öğrenme eğrisi |
+| Grafik kütüphanesi kur ve yönet | Hazır altyapı, sıfır konfigürasyon |
+| Her analiz için kod yaz → saatler | Doğal dil → saniyeler |
+| HTML/CSS ile görsel tasarla | Otomatik, sunum kalitesinde çıktı |
+
+### Kapsadığı Kullanıcı Profilleri
+
+- **Veri analistler** — Keşif analizini dramatik biçimde hızlandırır
+- **Ürün yöneticileri** — Kod yazmadan metrik görselleştirir
+- **Satış & pazarlama ekipleri** — Müşteri verilerini dakikalar içinde sunum haline getirir
+- **Yöneticiler** — Karar destek grafikleri toplantıya girerken hazır
+
+### Ölçeklenebilirlik
+
+- 10 satır ile 10.000 satır arasında aynı komut, otomatik uyarlama
+- Yeni CSV → anında analiz, sıfır konfigürasyon
+- Edge case'ler çözülü: büyük veri setleri, canvas overflow, PNG boyut sınırları
+
+---
+
+## 7. Vizyon & Yol Haritası
+
+Bu MVP, daha büyük bir hedefin ilk adımıdır:
+
+> **Hedef:** Şirket içindeki her veriye, her kanaldan, doğal dille erişmek ve onu görselleştirmek.
+
+### Faz 1 — Mevcut (CSV, Nisan 2026) ✅
+
+Tüm temel altyapı: şema çıkarımı, grafik öneri motoru, 7 grafik türü, HTML/PNG artifact üretimi. Kararlı ve test edilmiş.
+
+---
+
+### Faz 2 — Veri Kaynaklarını Genişlet
+
+Aynı grafik üretim zinciri değişmez — yalnızca `loadTabularFile` adaptörü genişler.
+
+#### Excel (.xlsx / .xls)
+- `exceljs` ile çok sayfalı dosya desteği
+- Tarih ve para birimi formatları şema çıkarımına dahil
+- Hangi sayfanın kullanılacağını kullanıcıya sorar
+
+#### JSON / REST API
+- Düz dizi ve iç içe nesne desteği, otomatik düzleştirme
+- REST API yanıtları doğrudan beslenir
+
+#### XML
+- `fast-xml-parser` ile tekrar eden eleman setlerini satır dizisine dönüştürme
+- Kurumsal SOAP/XML sistemleriyle entegrasyon
+
+---
+
+### Faz 3 — Veritabanına Doğal Dil ile Bağlan (MCP)
+
+En büyük sıçrama: dosya yüklemek yerine doğrudan veritabanına konuş.
 
 ```
-MVP (Şimdi)                        Genişletilmiş (Sonraki)
-──────────────────────────────     ────────────────────────────────────
-CSV dosyası                        CSV │ Excel │ JSON │ XML │ MCP DB
-       │                                          │
-loadTabularFile ──────────────────── Adaptör katmanı (kaynak bazlı)
-       │                                          │
-inferSchema ──────────────────────────────────────┘
-       │
-suggestChartOptions → generateVegaSpec → renderChartPreview
-       │
-  HTML + PNG artifact  (değişmez)
+"Son 6 aydaki ülke bazlı satışları göster"
+        │
+        ▼
+  MCP SQL sorgusu  (Postgres / Azure SQL / Cosmos DB)
+        │
+        ▼
+  inferSchema → generateVegaSpec → renderChartPreview
+        │
+        ▼
+  Bar chart artifact
 ```
 
-Temel grafik üretim zinciri **tüm kaynak türleri için ortaktır** — yalnızca veri yükleme katmanı genişler.
+- `mcp_azure_mcp_sql`, `mcp_azure_mcp_postgres`, `mcp_azure_mcp_cosmos` entegrasyonu
+- Kullanıcı tablo şemasını bilmek zorunda değil — şema çıkarımı sorgu sonucundan otomatik yapılır
+- Doğal dil → SQL → grafik zinciri tek bir Copilot konuşmasında tamamlanır
 
 ---
 
-*Bu sunum, [copilot-skills](.) projesinde geliştirilen skill'lerin Nisan 2026 itibarıyla mevcut durumunu yansıtmaktadır.*
+### Faz 4 — Kurumsal Özellikler
+
+| Özellik | Açıklama |
+|---|---|
+| **Otomatik rapor üretimi** | Bir veri setinden tüm anlamlı grafikleri tek seferde üret |
+| **Çok dosya karşılaştırma** | İki CSV'yi ya da iki dönem verisini aynı grafikte birleştir |
+| **Marka teması** | Şirket renklerine göre grafik paleti desteği |
+| **Paylaşım entegrasyonu** | Confluence, Notion, Slack'e artifact direkt gönderimi |
+| **Kayıtlı sorgular** | Sık kullanılan grafikleri isimlendir ve tek komutla yeniden üret |
+
+---
+
+## 8. Mimari Evrimi
+
+```
+Faz 1 — MVP (Şimdi)
+─────────────────────────────────────────────
+CSV → loadTabularFile → inferSchema
+   → suggestChartOptions → generateVegaSpec → renderChartPreview
+   → HTML + PNG artifact
+
+
+Faz 2+3 — Genişletilmiş
+─────────────────────────────────────────────
+CSV │ Excel │ JSON │ XML │ MCP DB (SQL)
+         │
+   Adaptör katmanı  (kaynak bazlı)
+         │
+   inferSchema  (değişmez)
+         │
+   suggestChartOptions → generateVegaSpec → renderChartPreview  (değişmez)
+         │
+   HTML + PNG artifact  (değişmez)
+```
+
+**Temel prensip:** Grafik üretim zincirinin tamamı kaynak türünden bağımsızdır. Her yeni veri kaynağı yalnızca bir adaptör eklemek demektir.
+
+---
+
+*Bu sunum, [copilot-skills](.) projesinde geliştirilen `data-charting` skill'inin Nisan 2026 itibarıyla mevcut durumunu ve ileriye dönük vizyonunu yansıtmaktadır.*
