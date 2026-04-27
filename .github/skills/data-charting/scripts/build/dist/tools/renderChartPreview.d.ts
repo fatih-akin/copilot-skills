@@ -1,7 +1,8 @@
 export interface RenderChartPreviewResult {
     htmlPath: string;
-    pngPath: string;
+    pngPath?: string;
     pngBase64?: string;
+    pngSkipped?: boolean;
 }
 export interface RenderChartPreviewOptions {
     includePngBase64?: boolean;

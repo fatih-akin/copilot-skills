@@ -5,8 +5,9 @@ import * as vegaLite from "vega-lite";
 
 export interface RenderChartPreviewResult {
   htmlPath: string;
-  pngPath: string;
+  pngPath?: string;
   pngBase64?: string;
+  pngSkipped?: boolean;
 }
 
 export interface RenderChartPreviewOptions {
@@ -91,13 +92,19 @@ const capSpecWidth = (spec: Record<string, unknown>): Record<string, unknown> =>
   return spec;
 };
 
-const renderToPng = async (spec: Record<string, unknown>): Promise<Buffer> => {
-  const capped = capSpecWidth(spec);
-  const vegaSpec = vegaLite.compile(capped as unknown as vegaLite.TopLevelSpec).spec;
-  const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
-  await view.runAsync();
-  const canvas = await view.toCanvas(1);
-  return (canvas as unknown as { toBuffer: (type: string) => Buffer }).toBuffer("image/png");
+const renderToPng = async (spec: Record<string, unknown>): Promise<Buffer | null> => {
+  try {
+    const { Resvg } = await import("@resvg/resvg-js");
+    const capped = capSpecWidth(spec);
+    const vegaSpec = vegaLite.compile(capped as unknown as vegaLite.TopLevelSpec).spec;
+    const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
+    await view.runAsync();
+    const svg = await view.toSVG(1);
+    const resvg = new Resvg(svg);
+    return Buffer.from(resvg.render().asPng());
+  } catch {
+    return null;
+  }
 };
 
 export const renderChartPreview = async (
@@ -113,6 +120,10 @@ export const renderChartPreview = async (
   await writeFile(htmlPath, buildHtml(title, spec), "utf8");
 
   const pngBuffer = await renderToPng(spec);
+  if (!pngBuffer) {
+    return { htmlPath, pngSkipped: true };
+  }
+
   const pngPath = path.join(outputDir, `${outputName}.png`);
   await writeFile(pngPath, pngBuffer);
   const includePngBase64 = options.includePngBase64 ?? true;

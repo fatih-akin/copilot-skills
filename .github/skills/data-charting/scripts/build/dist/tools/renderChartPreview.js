@@ -78,18 +78,28 @@ const capSpecWidth = (spec) => {
     return spec;
 };
 const renderToPng = async (spec) => {
-    const capped = capSpecWidth(spec);
-    const vegaSpec = vegaLite.compile(capped).spec;
-    const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
-    await view.runAsync();
-    const canvas = await view.toCanvas(1);
-    return canvas.toBuffer("image/png");
+    try {
+        const { Resvg } = await import("@resvg/resvg-js");
+        const capped = capSpecWidth(spec);
+        const vegaSpec = vegaLite.compile(capped).spec;
+        const view = new vega.View(vega.parse(vegaSpec), { renderer: "none" });
+        await view.runAsync();
+        const svg = await view.toSVG(1);
+        const resvg = new Resvg(svg);
+        return Buffer.from(resvg.render().asPng());
+    }
+    catch {
+        return null;
+    }
 };
 export const renderChartPreview = async (spec, title, outputDir, outputName, options = {}) => {
     await mkdir(outputDir, { recursive: true });
     const htmlPath = path.join(outputDir, `${outputName}.html`);
     await writeFile(htmlPath, buildHtml(title, spec), "utf8");
     const pngBuffer = await renderToPng(spec);
+    if (!pngBuffer) {
+        return { htmlPath, pngSkipped: true };
+    }
     const pngPath = path.join(outputDir, `${outputName}.png`);
     await writeFile(pngPath, pngBuffer);
     const includePngBase64 = options.includePngBase64 ?? true;
