@@ -6,19 +6,19 @@
 
 ## 1. Proje Özeti
 
-Bu proje, GitHub Copilot üzerine inşa edilmiş **3 özel skill** (yetenek) içerir. Kullanıcıların herhangi bir CSV dosyasını doğal dil ile sorarak saniyeler içinde interaktif grafiklere dönüştürmesini sağlar.
+Bu proje, GitHub Copilot üzerine inşa edilmiş **tek birleşik skill** içerir. Kullanıcıların herhangi bir CSV dosyasını doğal dil ile sorarak saniyeler içinde interaktif grafiklere dönüştürmesini sağlar.
 
 Kodlama bilgisi gerekmez. Veri analizi deneyimi gerekmez. Sadece sorun — grafik gelsin.
 
 ---
 
-## 2. Geliştirilen Skill'ler
+## 2. Geliştirilen Birleşik Skill
 
-### 2.1 `charto` — Tam Orkestratör
+### 2.1 `data-charting` — Uçtan Uca Tek Skill
 
 > *"Bu veriden bana ülke bazlı organizasyon sayılarını gösteren bir grafik çiz."*
 
-Kullanıcının tek bir cümleyle veri görselleştirme iş akışını başlatmasını sağlar.
+Kullanıcının tek bir cümleyle tam veri görselleştirme iş akışını başlatmasını sağlar.
 
 **İş Akışı:**
 ```
@@ -26,40 +26,17 @@ CSV Dosyası → Şema Çıkarımı → Seçenek Önerisi → Kullanıcı Seçim
 ```
 
 **Özellikler:**
-- 10.000+ satırlık büyük veri setlerini otomatik olarak algılar (Large Dataset Mode)
-- Gereksiz yüklemelerden kaçınmak için PNG base64'ü yalnızca istek üzerine üretir
-- Sütun isimlerini icat etmez — yalnızca gerçek veriyi kullanır
-- Dönüşüm gerektiren grafik türleri için (pie, heatmap) otomatik agregasyon yapar
+- Tek skill içinde analiz + öneri + build + render akışı
+- 10.000+ satırlık büyük veri setlerini otomatik algılama (Large Dataset Mode)
+- Gereksiz yüklemeleri önlemek için PNG base64'ü yalnızca istek üzerine üretme
+- Sütun isimlerini icat etmeyen, yalnızca gerçek veriye dayalı kararlar
+- Dönüşüm gerektiren grafik türlerinde kontrollü agregasyon
 
----
-
-### 2.2 `chart-planner` — Analiz ve Öneri
-
-> *"Bu CSV'den hangi grafikler çizilebilir?"*
-
-Veriyi okur, şemayı çıkarır ve **neden uygun olduklarını açıklayarak** sıralanmış grafik seçenekleri sunar.
-
-**Özellikler:**
-- Saha tiplerini otomatik belirler: `number`, `string`, `date`, `boolean`
-- 6 grafik türünü değerlendirir: Bar, Scatter, Histogram, Boxplot, Pie, Heatmap, Timeline
-- Dönüşüm gerekiyorsa (gruplama, filtreleme, sayım) bunu açıkça belirtir
-- Büyük veri setlerinde agregasyon öncelikli seçenekleri öne çıkarır
-- Grafik render etmez — karar almayı hızlandırır
-
----
-
-### 2.3 `chart-builder` — Artifact Üretici
-
-> *"2 numaralı seçeneği çiz."*
-
-Kullanıcının seçtiği grafiği alır, Vega-Lite spesifikasyonunu oluşturur ve HTML + PNG dosyaları üretir.
-
-**Özellikler:**
-- Interaktif HTML çıktısı (zoom, tooltip, filtre)
-- PNG çıktısı (sunumlarda, raporlarda kullanıma hazır)
-- Büyük kategorik eksenlerde otomatik genişlik hesaplama (`{ step: 20 }`)
-- Chrome canvas limiti koruması (max 16.000px — tarayıcı çökmesi engellenir)
-- PNG için ayrı boyut sınırı (max 3.000px — ince çizgi artefaktı engellenir)
+**Klasör Yapısı (Skill):**
+- `.github/skills/data-charting/SKILL.md`
+- `.github/skills/data-charting/references/ref1.md`
+- `.github/skills/data-charting/scripts/*`
+- `.github/skills/data-charting/scripts/built/dist/*` (paylaşım için build alınmış hali)
 
 ---
 
@@ -160,21 +137,20 @@ Bu oturumda üretilen artifact'lar gerçek iş senaryolarını yansıtır:
 Kullanıcı Sorusu (Doğal Dil)
         │
         ▼
-   charto (orkestratör)
-   ┌────┴────────────────────┐
-   │                         │
-chart-planner           chart-builder
-   │                         │
-   ├─ loadTabularFile        ├─ generateVegaSpec
-   ├─ inferSchema            │    ├─ buildGenericSpec
-   └─ suggestChartOptions    │    ├─ buildHeatmapSpec
-                             │    ├─ buildHistogramSpec
-                             │    ├─ buildPieSpec
-                             │    └─ buildTimelineSpec
-                             │
-                             └─ renderChartPreview
-                                  ├─ HTML artifact
-                                  └─ PNG artifact
+   data-charting (tek skill)
+        │
+        ├─ loadTabularFile
+        ├─ inferSchema
+        ├─ suggestChartOptions
+        ├─ generateVegaSpec
+        │    ├─ buildGenericSpec
+        │    ├─ buildHeatmapSpec
+        │    ├─ buildHistogramSpec
+        │    ├─ buildPieSpec
+        │    └─ buildTimelineSpec
+        └─ renderChartPreview
+             ├─ HTML artifact
+             └─ PNG artifact
 ```
 
 ---
